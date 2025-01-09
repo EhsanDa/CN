@@ -3,6 +3,7 @@ from network import GameConnection
 import random
 import sys
 import server
+from roll_dice import *
 
 #todo: jail rolls
 #todo: can't split dice rolls
@@ -35,7 +36,7 @@ def startgame(ip= '127.0.0.1', port= 5555, type ='j'):
         print("Current turn: " + ("X" if current_side else "O"))
         
         if current_side == my_side:  # My turn
-            roll1, roll2 = server.get_dice()
+            roll1, roll2 = roll_dices()
             conn.send_move(-1, -1, [roll1, roll2])  # Special move to sync dice rolls
             
             total = roll1 + roll2
