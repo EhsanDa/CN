@@ -2,29 +2,27 @@ import socket
 import json
 
 class GameConnection:
-    def __init__(self, port=5555):
-        self.port = port
+    def __init__(self):
         self.socket = None
         self.connection = None
         
-    def host_game(self):
+    def host_game(self, ip, port):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.bind(('', self.port))
+        self.socket.bind((ip, port))
         self.socket.listen(1)
-        print("Waiting for opponent to join...")
         self.connection, addr = self.socket.accept()
         print("Opponent connected from:", addr)
         return True
 
-    def join_game(self, host):
+    def join_game(self, ip, port):
         try:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.socket.connect((host, self.port))
+            self.socket.connect((ip, port))
             self.connection = self.socket
-            print("Connected to host!")
+            print("Connected to oponent!")
             return True
         except:
-            print("Could not connect to host")
+            print("Could not connect to oponent")
             return False
 
     def send_move(self, space, steps, rolls=None):

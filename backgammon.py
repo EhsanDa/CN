@@ -2,28 +2,27 @@ from board import Board
 from network import GameConnection
 import random
 import sys
+import server
 
 #todo: jail rolls
 #todo: can't split dice rolls
 #todo: make sure the "done" thing works
 exitTerms = ("quit", "exit", "bye","q")
 
-def main():
+def startgame(ip= '127.0.0.1', port= 5555, type ='j'):
     b = Board()
     conn = GameConnection()
     
-    print("Do you want to (h)ost or (j)oin a game?")
-    choice = input().lower()
+
     
-    if choice.startswith('h'):
+    if type.startswith('h'):
         is_host = True
-        conn.host_game()
+        conn.host_game(ip, port)
         my_side = True  # Host is X
         print("You are X")
     else:
         is_host = False
-        host_ip = input("Enter host IP address: ")
-        if not conn.join_game(host_ip):
+        if not conn.join_game(ip, port):
             return
         my_side = False  # Joiner is O
         print("You are O")
@@ -36,8 +35,7 @@ def main():
         print("Current turn: " + ("X" if current_side else "O"))
         
         if current_side == my_side:  # My turn
-            roll1 = random.randint(1, 6)
-            roll2 = random.randint(1, 6)
+            roll1, roll2 = server.get_dice()
             conn.send_move(-1, -1, [roll1, roll2])  # Special move to sync dice rolls
             
             total = roll1 + roll2
@@ -92,25 +90,54 @@ def make_valid_move(board, side, space, steps, roll1, roll2, total):
     Validate and apply a move on the board.
     Returns True if move was valid, False otherwise.
     """
-    if roll1 and roll2:  # Only validate rolls on active player's turn
-        if steps != roll1 and steps != roll2 and steps != (roll1 + roll2) and steps != 100:
-            print("You didn't roll that!")
+    # Check if piece is in jail
+    in_jail = (side and board.xJail > 0) or (not side and board.oJail > 0)
+    
+    if in_jail:
+        if space != 0:
+            print("You must move from jail first (use 0 as starting position)")
             return False
             
-    move, response = board.makeMove(space - 1, side, steps)  # Apply move
+        # Validate the roll first
+        if roll1 and roll2 and steps != roll1 and steps != roll2:
+            print(f"You must use one of your rolls ({roll1} or {roll2})")
+            return False
+            
+        # For X (True): entering on 24-19 (use roll 1-6 directly)
+        # For O (False): entering on 1-6 (use roll 1-6 directly)
+        if side:  # X player
+            actual_steps = steps  # Use roll directly as point number from 24
+        else:  # O player
+            actual_steps = steps  # Use roll directly as point number from 1
+            
+        print(f"Debug: Attempting jail move to point {actual_steps}")
+        move, response = board.makeMove(-1, side, actual_steps)
+    else:
+        if roll1 and roll2:  # Only validate rolls on active player's turn
+            if steps != roll1 and steps != roll2 and steps != (roll1 + roll2) and steps != 100:
+                print("You didn't roll that!")
+                return False
+                
+        move, response = board.makeMove(space - 1, side, steps)
+        
     print(response)
     return move
 
 #TODO: Include error management
+
 def parseInput(response):
-    if response == "d" or response == "f" or response == "done" or response == "finish":
-        return(100,100)
+    print(f"Debug: Parsing input response='{response}'")
     if response in exitTerms:
         return (101, 101)
-    # if type(response) == type("Sample string"):
-    #     return(101,101)
     loc = findSeparation(response)
-    return(int(response[:loc]), int(response[loc+1:])) 
+    try:
+        space = int(response[:loc])
+        steps = int(response[loc+1:])
+        print(f"Debug: Parsed space={space}, steps={steps}")
+        return (space, steps)
+    except ValueError:
+        print("Debug: Invalid input format.")
+        return (-1, -1)
 
 def findSeparation(value):
     for i in range(len(value)):
@@ -119,4 +146,5 @@ def findSeparation(value):
     return 0
 
 if __name__ == "__main__":
-    main()
+    type = input("enter h or j")
+    startgame(type=type)

@@ -21,107 +21,100 @@ class Board:
 	
 	def makeMove(self, space, side, steps):
 		"""
-		@param
-		space = starting space
-		side = true if X (steps are decreasing), false if O (steps are increasing)
-		steps = number of steps
-		*** if you are trying to free a piece from jail, steps = 0
-		@return
-		tuple of true if move was made, false if not possible, and string with response
+		Updated makeMove function to fix jail release issues.
 		"""
-		if side:
-			if (self.xJail > 0 and (steps != 0 or space < 18)):
-				return (False, "Make sure you free your piece from jail first!")
-			elif (self.xJail > 0 and steps == 0 and space > 17):
-				if (self.myBoard[space] > 1):
-					return (False, "Space is occupied")
-				elif (self.myBoard[space] == 1):
-					self.xJail = self.xJail - 1
-					self.myBoard[space] = -1	
-					self.oJail = self.oJail + 1
-					self.oHome = self.oHome - 1
-					return (True, "Piece released from jail and sent one to jail!")
+		print(f"Debug: makeMove called with space={space}, side={'X' if side else 'O'}, steps={steps}")
+		print(f"Debug: Current xJail={self.xJail}, oJail={self.oJail}")
+
+		# Check if the current team needs to free a piece from jail
+		if side:  # X's turn
+			if self.xJail > 0:
+				if steps != 0 or space < 18 or space > 23:
+					return (False, "Invalid jail release move for X.")
+				if self.myBoard[space] > 1:
+					return (False, "Space is occupied by opponent pieces.")
+				elif self.myBoard[space] == 1:
+					self.xJail -= 1
+					self.myBoard[space] = -1
+					self.oJail += 1
+					self.oHome -= 1
+					return (True, "Piece released from jail and opponent sent to jail!")
 				else:
-					self.xJail = self.xJail - 1
-					self.myBoard[space] = self.myBoard[space] - 1
+					self.xJail -= 1
+					self.myBoard[space] -= 1
 					return (True, "Piece released from jail!")
-			elif (self.myBoard[space] >= 0):
-				return (False, "Space is either empty or wrong team")
-			else:
-				newSpace = space - steps
-				if (newSpace < 0):
-					if (self.xHome < 15):
-						return (False, "Make sure all of your pieces are in home before clearing them!")
-					else:
-						self.myBoard[space] = self.myBoard[space] - 1
-						self.xFree = self.xFree + 1
-						return (True, "Piece cleared!")
-				elif (self.myBoard[newSpace] > 1):
-					return (False, "New space is occupied")
-				elif (self.myBoard[newSpace] == 1):
-					self.myBoard[space] = self.myBoard[space] + 1
-					self.myBoard[newSpace] = -1
-					self.oJail = self.oJail + 1
-					if (newSpace >= 18):
-						self.oHome = self.oHome - 1
-					return (True, "Sent one to jail!")
-				else:
-					self.myBoard[space] = self.myBoard[space] + 1
-					self.myBoard[newSpace] = self.myBoard[newSpace] - 1
-					if (newSpace < 6):
-						self.xHome = self.xHome + 1
-					if (newSpace < 11):
-						self.updateRows(True)
-					else:
-						self.updateRows(False)
-					return (True, "Move made")
-		else:
-			if (self.oJail > 0 and (steps != 0 or space > 5)):
-				return (False, "Make sure you free your piece from jail first!")
-			elif (self.oJail > 0 and steps == 0 and space < 6):
-				if (self.myBoard[space] < -1):
-					return (False, "Space is occupied")
-				elif (self.myBoard[space] == -1):
-					self.oJail = self.oJail - 1
+		else:  # O's turn
+			if self.oJail > 0:
+				if steps != 0 or space < 0 or space > 5:
+					return (False, "Invalid jail release move for O.")
+				if self.myBoard[space] < -1:
+					return (False, "Space is occupied by opponent pieces.")
+				elif self.myBoard[space] == -1:
+					self.oJail -= 1
 					self.myBoard[space] = 1
-					self.xJail = self.xJail + 1
-					self.xHome = self.xHome - 1
-					return (True, "Piece released from jail and one sent to jail!")
+					self.xJail += 1
+					self.xHome -= 1
+					return (True, "Piece released from jail and opponent sent to jail!")
 				else:
-					self.oJail = self.oJail - 1
-					self.myBoard[space] = self.myBoard[space] + 1
+					self.oJail -= 1
+					self.myBoard[space] += 1
 					return (True, "Piece released from jail!")
-			elif (self.myBoard[space] <= 0):
-				return (False, "Space is either empty or wrong team")
-			else:
-				newSpace = space + steps
-				if (newSpace > 23):
-					if (self.oHome < 15):
-						return (False, "Make sure all of your pieces are in home before clearing them!")
-					else:
-						self.myBoard[space] = self.myBoard[space] - 1
-						self.oFree = self.oFree + 1
-						return (True, "Piece cleared!")
-				elif (self.myBoard[newSpace] < -1):
-					return (False, "New space is occupied")
-				elif (self.myBoard[newSpace] == -1):
-					self.myBoard[space] = self.myBoard[space] - 1
-					self.myBoard[newSpace] = 1
-					self.xJail = self.xJail + 1
-					if (newSpace < 6):
-						self.xHome = self.xHome - 1
-					return (True, "Sent one to jail!")
+
+		# Handle normal moves (when no pieces are in jail)
+		if side:  # X's turn
+			if self.myBoard[space] >= 0:
+				return (False, "Space is either empty or contains opponent pieces.")
+			newSpace = space - steps
+			if newSpace < 0:  # Clearing pieces
+				if self.xHome < 15:
+					return (False, "Make sure all your pieces are in the home before clearing them!")
 				else:
-					self.myBoard[space] = self.myBoard[space] - 1
-					self.myBoard[newSpace] = self.myBoard[newSpace] + 1
-					if (newSpace > 17):
-						self.oHome = self.oHome + 1
-					if (newSpace < 11):
-						self.updateRows(True)
-					else:
-						self.updateRows(False)
-					return (True, "Move made")
-				
+					self.myBoard[space] += 1
+					self.xFree += 1
+					return (True, "Piece cleared!")
+			if self.myBoard[newSpace] > 1:
+				return (False, "New space is occupied by opponent pieces.")
+			elif self.myBoard[newSpace] == 1:
+				self.myBoard[space] += 1
+				self.myBoard[newSpace] = -1
+				self.oJail += 1
+				if newSpace >= 18:
+					self.oHome -= 1
+				return (True, "Sent one opponent piece to jail!")
+			else:
+				self.myBoard[space] += 1
+				self.myBoard[newSpace] -= 1
+				if newSpace < 6:
+					self.xHome += 1
+				return (True, "Move made successfully.")
+		else:  # O's turn
+			if self.myBoard[space] <= 0:
+				return (False, "Space is either empty or contains opponent pieces.")
+			newSpace = space + steps
+			if newSpace > 23:  # Clearing pieces
+				if self.oHome < 15:
+					return (False, "Make sure all your pieces are in the home before clearing them!")
+				else:
+					self.myBoard[space] -= 1
+					self.oFree += 1
+					return (True, "Piece cleared!")
+			if self.myBoard[newSpace] < -1:
+				return (False, "New space is occupied by opponent pieces.")
+			elif self.myBoard[newSpace] == -1:
+				self.myBoard[space] -= 1
+				self.myBoard[newSpace] = 1
+				self.xJail += 1
+				if newSpace < 6:
+					self.xHome -= 1
+				return (True, "Sent one opponent piece to jail!")
+			else:
+				self.myBoard[space] -= 1
+				self.myBoard[newSpace] += 1
+				if newSpace > 17:
+					self.oHome += 1
+				return (True, "Move made successfully.")
+
+		
 	def updateRows(self, top):
 		changed = False
 		if top:
@@ -136,6 +129,20 @@ class Board:
 					changed = True
 		if not changed:
 			self.maxRows = 5
+
+
+	def validate_jail_release(self, side, space, steps):
+		if side:  # X's turn
+			if self.xJail > 0 and steps == 0 and 18 <= space <= 23:
+				if self.myBoard[space] > 1:
+					return (False, "Space is occupied by more than one opponent piece.")
+				return (True, "Valid jail release move for X.")
+		else:  # O's turn
+			if self.oJail > 0 and steps == 0 and 0 <= space <= 5:
+				if self.myBoard[space] < -1:
+					return (False, "Space is occupied by more than one opponent piece.")
+				return (True, "Valid jail release move for O.")
+		return (False, "Invalid jail release move.")
 
 
 	def __repr__(self):
@@ -273,4 +280,10 @@ class Board:
 				return self.oHome >= 15
 			return self.myBoard[new_space] >= -1  # Valid if empty or one opponent's piece
 
-	
+	def debug_board_status(self):
+		print(f"Debug: xJail={self.xJail}, oJail={self.oJail}")
+		print(f"Debug: xHome={self.xHome}, oHome={self.oHome}")
+		print(f"Debug: xFree={self.xFree}, oFree={self.oFree}")
+		print("Debug: Board State:")
+		for i in range(24):
+			print(f"Space {i}: {self.myBoard[i]}")
