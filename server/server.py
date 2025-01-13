@@ -6,6 +6,42 @@ from pymongo import MongoClient
 def parse_message(message):
     return json.loads(message)
 
+def check_game_end(board):
+    """
+    Check if the game has ended based on Backgammon rules.
+    Returns (is_game_over, winner, message)
+    winner: True for X, False for O, None if game not over
+    """
+    
+    # Check if X has won
+    if int(board['xFree']) == 15:
+        return (True, True, "X wins! All pieces cleared!")
+    
+    # Check if O has won
+    if int(board['oFree']) == 15:
+        return (True, False, "O wins! All pieces cleared!")
+        
+    # Convert the board['myBoard'] values into a list of integers for processing
+    myBoard = {int(k): int(v) for k, v in board['myBoard'].items()}  # Convert keys and values to int
+    
+    # Check if all X pieces are in home or freed
+    x_in_home = all(myBoard[i] >= 0 for i in range(6, 24))  # Check all spaces outside X's home
+
+    # Check if all O pieces are in home or freed
+    o_in_home = all(myBoard[i] <= 0 for i in range(0, 18))  # Check all spaces outside O's home
+
+    # Return game state
+    if x_in_home and o_in_home:
+        # If both players are in their home boards, compare freed pieces
+        if int(board['xFree']) > int(board['oFree']):
+            return (True, True, "X wins with more pieces freed!")
+        elif int(board['oFree']) > int(board['xFree']):
+            return (True, False, "O wins with more pieces freed!")
+            
+    # Game continues
+    return (False, None, "Game continues")
+
+
 class GameServer:
     def __init__(self, host="127.0.0.1", port=65432,
                  db_uri="mongodb://user:password@localhost:27017/game_db", 
@@ -90,9 +126,22 @@ class GameServer:
             user_requests = list(self.requests_collection.find({'target_name': user_name}, {'_id': 0}))
             return json.dumps({'result': user_requests})
         
+        elif command == "check end game":
+            board = payload.get('board')
+            print(board)
+            game_over, winner, message = check_game_end(board)
+            result = {
+                'game_over': game_over,
+                'winner': winner,
+                'message': message
+            }
+            return json.dumps(result)
+        
         else:
             return json.dumps({'result': "Unknown command"})
 
 if __name__ == "__main__":
     server = GameServer()
     server.start()
+    
+    

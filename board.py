@@ -303,3 +303,15 @@ class Board:
 		print("Debug: Board State:")
 		for i in range(24):
 			print(f"Space {i}: {self.myBoard[i]}")
+   
+	def to_dict(self):
+		return {
+			'myBoard': self.myBoard,
+			'maxRows': self.maxRows,
+			'xFree': self.xFree,
+			'oFree': self.oFree,
+			'xJail': self.xJail,
+			'oJail': self.oJail,
+			'xHome': self.xHome,
+			'oHome': self.oHome,
+		}

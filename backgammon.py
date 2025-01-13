@@ -3,7 +3,7 @@ from network import GameConnection
 import random
 import sys
 from roll_dice import roll_dices
-from endgame import check_game_end
+from endgame import check_end_game
 
 #todo: jail rolls
 #todo: can't split dice rolls
@@ -65,7 +65,8 @@ def startgame(ip= '127.0.0.1', port= 5555, type ='j'):
                     print(b)
                     
                     # Check for game end after each move
-                    game_over, winner, message = check_game_end(b)
+                    game_over, winner, message = check_end_game(b)
+                    print(message)
                     if game_over:
                         print(message)
                         conn.close()
