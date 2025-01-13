@@ -2,8 +2,8 @@ from board import Board
 from network import GameConnection
 import random
 import sys
-import server
-from roll_dice import *
+from roll_dice import roll_dices
+from endgame import check_game_end
 
 #todo: jail rolls
 #todo: can't split dice rolls
@@ -31,7 +31,7 @@ def startgame(ip= '127.0.0.1', port= 5555, type ='j'):
     line = ""
     current_side = True  # X starts first
     
-    while (line not in exitTerms and (b.xFree < 15 or b.oFree < 15)):
+    while (line not in exitTerms):
         print(b)
         print("Current turn: " + ("X" if current_side else "O"))
         
@@ -63,6 +63,14 @@ def startgame(ip= '127.0.0.1', port= 5555, type ='j'):
                     conn.send_move(space, steps, None)
                     total -= steps
                     print(b)
+                    
+                    # Check for game end after each move
+                    game_over, winner, message = check_game_end(b)
+                    if game_over:
+                        print(message)
+                        conn.close()
+                        return
+                        
                     if total == 0:  # No more moves left
                         print("No more moves available. Turn complete.")
                         conn.send_move(100, 100, None)  # Signal end of turn
@@ -83,6 +91,7 @@ def startgame(ip= '127.0.0.1', port= 5555, type ='j'):
             else:  # Normal move
                 make_valid_move(b, not my_side, move['space'], move['steps'], None, None, None)
                 print(b)
+                
 
     conn.close()
 
@@ -94,6 +103,10 @@ def make_valid_move(board, side, space, steps, roll1, roll2, total):
     # Check if piece is in jail
     in_jail = (side and board.xJail > 0) or (not side and board.oJail > 0)
     
+    if not (0 <= space <= 24):  # Changed from 0-23 to 0-24 to allow for user input of 1-24
+        print("Invalid space number. Must be between 1 and 24.")
+        return False
+    
     if in_jail:
         if space != 0:
             print("You must move from jail first (use 0 as starting position)")
@@ -103,26 +116,21 @@ def make_valid_move(board, side, space, steps, roll1, roll2, total):
         if roll1 and roll2 and steps != roll1 and steps != roll2:
             print(f"You must use one of your rolls ({roll1} or {roll2})")
             return False
-            
-        # For X (True): entering on 24-19 (use roll 1-6 directly)
-        # For O (False): entering on 1-6 (use roll 1-6 directly)
-        if side:  # X player
-            actual_steps = steps  # Use roll directly as point number from 24
-        else:  # O player
-            actual_steps = steps  # Use roll directly as point number from 1
-            
-        print(f"Debug: Attempting jail move to point {actual_steps}")
-        move, response = board.makeMove(-1, side, actual_steps)
+
+        # Pass the move directly to board - it will handle the target space calculation
+        move, response = board.makeMove(0, side, steps)
+        print(response)
+        return move
     else:
+        # Normal move validation
         if roll1 and roll2:  # Only validate rolls on active player's turn
-            if steps != roll1 and steps != roll2 and steps != (roll1 + roll2) and steps != 100:
-                print("You didn't roll that!")
+            if steps != roll1 and steps != roll2 and steps != total and steps != 100:
+                print("Invalid move - must use available dice rolls!")
                 return False
                 
         move, response = board.makeMove(space - 1, side, steps)
-        
-    print(response)
-    return move
+        print(response)
+        return move
 
 #TODO: Include error management
 

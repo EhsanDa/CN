@@ -21,44 +21,45 @@ class Board:
 	
 	def makeMove(self, space, side, steps):
 		"""
-		Updated makeMove function to fix jail release issues.
+		Updated makeMove function with corrected jail release mechanics
 		"""
 		print(f"Debug: makeMove called with space={space}, side={'X' if side else 'O'}, steps={steps}")
 		print(f"Debug: Current xJail={self.xJail}, oJail={self.oJail}")
 
-		# Check if the current team needs to free a piece from jail
-		if side:  # X's turn
-			if self.xJail > 0:
-				if steps != 0 or space < 18 or space > 23:
-					return (False, "Invalid jail release move for X.")
-				if self.myBoard[space] > 1:
-					return (False, "Space is occupied by opponent pieces.")
-				elif self.myBoard[space] == 1:
-					self.xJail -= 1
-					self.myBoard[space] = -1
+		# Handle jail releases
+		if (side and self.xJail > 0) or (not side and self.oJail > 0):
+			valid, message = self.validate_jail_release(side, 0, steps)  # Always use 0 for jail moves
+			if not valid:
+				return (False, message)
+			
+			if side:  # X's turn
+				target_space = 24 - steps - 1  # Subtract 1 because array is 0-based
+				if not (18 <= target_space <= 23):
+					return (False, "Invalid dice roll for jail release")
+					
+				self.xJail -= 1
+				if self.myBoard[target_space] == 1:
+					self.myBoard[target_space] = -1
 					self.oJail += 1
 					self.oHome -= 1
-					return (True, "Piece released from jail and opponent sent to jail!")
+					return (True, f"Piece released from jail to {target_space + 1} and opponent sent to jail!")
 				else:
-					self.xJail -= 1
-					self.myBoard[space] -= 1
-					return (True, "Piece released from jail!")
-		else:  # O's turn
-			if self.oJail > 0:
-				if steps != 0 or space < 0 or space > 5:
-					return (False, "Invalid jail release move for O.")
-				if self.myBoard[space] < -1:
-					return (False, "Space is occupied by opponent pieces.")
-				elif self.myBoard[space] == -1:
-					self.oJail -= 1
-					self.myBoard[space] = 1
+					self.myBoard[target_space+1] -= 1
+					return (True, f"Piece released from jail to {target_space}!")
+			else:  # O's turn
+				target_space = steps - 1
+				if not (0 <= target_space <= 5):
+					return (False, "Invalid dice roll for jail release")
+					
+				self.oJail -= 1
+				if self.myBoard[target_space] == -1:
+					self.myBoard[target_space] = 1
 					self.xJail += 1
 					self.xHome -= 1
-					return (True, "Piece released from jail and opponent sent to jail!")
+					return (True, f"Piece released from jail to {target_space + 1} and opponent sent to jail!")
 				else:
-					self.oJail -= 1
-					self.myBoard[space] += 1
-					return (True, "Piece released from jail!")
+					self.myBoard[target_space] += 1
+					return (True, f"Piece released from jail to {target_space + 1}!")
 
 		# Handle normal moves (when no pieces are in jail)
 		if side:  # X's turn
@@ -132,17 +133,32 @@ class Board:
 
 
 	def validate_jail_release(self, side, space, steps):
+		"""
+		Validate jail release moves according to backgammon rules.
+		space should be 0 when attempting jail release.
+		X starts from 24, O starts from 1
+		"""
+		if space != 0:
+			return (False, "Jail release must start with space 0")
+
 		if side:  # X's turn
-			if self.xJail > 0 and steps == 0 and 18 <= space <= 23:
-				if self.myBoard[space] > 1:
-					return (False, "Space is occupied by more than one opponent piece.")
-				return (True, "Valid jail release move for X.")
+			if self.xJail > 0:
+				target_space = 24 - steps - 1  # Subtract 1 for 0-based array
+				if 18 <= target_space <= 23:  # Valid range for X's reentry
+					if self.myBoard[target_space] > 1:
+						return (False, "Target space is occupied by multiple opponent pieces")
+					return (True, f"Valid jail release move for X to space {target_space + 1}")
+				return (False, "Invalid dice roll for jail release")
 		else:  # O's turn
-			if self.oJail > 0 and steps == 0 and 0 <= space <= 5:
-				if self.myBoard[space] < -1:
-					return (False, "Space is occupied by more than one opponent piece.")
-				return (True, "Valid jail release move for O.")
-		return (False, "Invalid jail release move.")
+			if self.oJail > 0:
+				target_space = steps - 1
+				if 0 <= target_space <= 5:  # Valid range for O's reentry
+					if self.myBoard[target_space] < -1:
+						return (False, "Target space is occupied by multiple opponent pieces")
+					return (True, f"Valid jail release move for O to space {target_space + 1}")
+				return (False, "Invalid dice roll for jail release")
+		
+		return (False, "No pieces in jail")
 
 
 	def __repr__(self):
