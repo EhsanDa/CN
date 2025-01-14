@@ -94,7 +94,7 @@ def router_node(host, port, next_host=None, next_port=None, is_exit_node=False):
                     "1",
                     "Server",
                     message["sender"],
-                    "set_key_response",
+                    "server_response",  # Message type
                     encrypt_aes(router_key, next_response).hex()  # Convert to hex
                 )
 

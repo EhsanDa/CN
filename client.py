@@ -7,6 +7,8 @@ from roll_dice import *
 
 from backgammon import *
 
+from chat import *
+
 # Perform handshake first
 handshake()
 
@@ -21,7 +23,7 @@ def start_client():
             ip = input("Enter your IP: ").strip()
 
         # Display available commands
-        message = input("Enter your message (start game, request player <name>,get requests, I'm ready to game, roll dice, get ready players, accept <name>, or exit to leave): ").lower()
+        message = input("Enter your message (start game, request player <name>, get requests, I'm ready to game, roll dice, get ready players, accept <name>, or exit to leave): ").lower()
     
         if message == "exit":
             print("Exiting the game.")
@@ -50,10 +52,13 @@ def start_client():
             }
             y = json.dumps(x)
             send_message(y)
-            
-            startgame(ip,int(host_socket),'h')
-            
-            
+
+            # Start the chat in a new thread
+            chat_thread = threading.Thread(target=start_chat, args=(name, 'host', ip, 9099))
+            chat_thread.start()
+
+            # Proceed with the game
+            startgame(ip, int(host_socket), 'h')
 
         # Handle 'get ready players' command
         elif message == "get ready players":
@@ -83,20 +88,15 @@ def start_client():
             
             data = json.loads(response)
             other_player_info = data['result'][0]
-            
+
         # Handle 'accept connection' command
         elif message.startswith("accept"):
-            # target_name = message.split(maxsplit=1)[1]  # Get the name to accept
-            # x = {
-            #     "command": "accept connection",
-            #     "from_name": target_name,
-            #     "ip": ip,
-            #     "name": name
-            # }
-            # y = json.dumps(x)
-            # response = send_message(y)
-            
-            startgame(other_player_info['ip'],int(other_player_info['host_socket']),'j')
+            # Start the chat in a new thread
+            chat_thread = threading.Thread(target=start_chat, args=(name, 'join', other_player_info['ip'], 9099))
+            chat_thread.start()
+
+            # Proceed with the game
+            startgame(other_player_info['ip'], int(other_player_info['host_socket']), 'j')
 
         # Handle 'roll dice' command
         elif message == "roll dice":

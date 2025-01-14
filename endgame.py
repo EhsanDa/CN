@@ -11,10 +11,8 @@ def check_end_game(b):
         "command": message,
         "board": board
     }
-    print(x)
     y = json.dumps(x)
     response = send_message(y)
-    print(response)
     data = json.loads(response)
     # Access the rolls
     game_over = data['game_over']

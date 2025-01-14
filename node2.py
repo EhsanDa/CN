@@ -92,7 +92,7 @@ def router_node(host, port, next_host=None, next_port=None, is_exit_node=False):
                         "1",
                         next_response["sender"],
                         next_response["receiver"],
-                        "set_key_response",
+                        "server_response",  # Message type
                         re_encrypted_payload.hex()
                     )
 

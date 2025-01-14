@@ -96,7 +96,7 @@ def router_node(host, port, next_host=None, next_port=None, is_exit_node=False):
                         "1",  # Version
                         next_response["sender"],  # Original sender (Router2)
                         next_response["receiver"],  # Original receiver (Client)
-                        "set_key_response",  # Message type
+                        "server_response",  # Message type
                         re_encrypted_payload.hex()  # Re-encrypted payload
                     )
                     # Send the re-encrypted response to the client
