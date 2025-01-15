@@ -47,6 +47,26 @@ def startgame(ip= '127.0.0.1', port= 5555, type ='j'):
             while total > 0:
                 print(f"You have {total} steps left.")
                 line = input("Enter your move: ")
+                if line == 'resign':
+                    line = input("Do you want to play again?(y/n)\n")
+                    if line == "y":
+                        print('Sending request to openet..')
+                        conn.send_move(-2,-2,[-2,-2])
+                        ans = conn.receive_move()
+                        if ans['space'] == -4:
+                            print("Oponnent accepted! restarting the game..")
+                            b = Board()
+                            break
+                        else:
+                            print("game ended")
+                            conn.close()
+                            return
+                    else:
+                        conn.send_move(-2,-3,[-2,-2])
+                        print("game ended")
+                        conn.close()
+                        return
+                    
                 space, steps = parseInput(line)
                 
                 if space == 100 and steps == 100:  # "done" command
@@ -64,7 +84,7 @@ def startgame(ip= '127.0.0.1', port= 5555, type ='j'):
                     total -= steps
                     print(b)
                     
-                    # Check for game end after each move
+                    #Check for game end after each move
                     game_over, winner, message = check_end_game(b)
                     print(message)
                     if game_over:
@@ -81,19 +101,38 @@ def startgame(ip= '127.0.0.1', port= 5555, type ='j'):
             print("Waiting for opponent's move...")
             move = conn.receive_move()
             if not move:
-                continue
+                print("Opponent disconnected. Game ended.")
+                conn.close()
+                return
                 
             if move['space'] == -1:  # Receiving dice rolls
                 rolls = move['rolls']
                 print(f"Opponent rolled a {rolls[0]} and a {rolls[1]}")
+            if move['space'] == -2:
+                print("YOU WIN! OPPONENT RESIGNED")
+                if move['steps'] == -2:
+                    ans = input("Oponnent wants a rematch do you agree (y/n)?")
+                    if ans == "y":
+                        conn.send_move(-4,0,[0,0])
+                        b = Board()
+                    else:
+                        print("Game ended")
+                        conn.send_move(-5,0,[0,0])
+                        conn.close()
+                        return
+                else:
+                        print("Game ended")
+                        conn.close()
+                        return
+
             elif move['space'] == 100:  # Turn complete
                 print("Opponent's turn is complete.")
                 current_side = not current_side
             else:  # Normal move
                 make_valid_move(b, not my_side, move['space'], move['steps'], None, None, None)
                 print(b)
-                
-
+    
+        
     conn.close()
 
 def make_valid_move(board, side, space, steps, roll1, roll2, total):
