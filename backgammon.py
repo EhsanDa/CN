@@ -4,6 +4,8 @@ import random
 import sys
 from roll_dice import roll_dices
 from endgame import check_end_game
+from gui_board import BoardGUI
+import threading
 
 #todo: jail rolls
 #todo: can't split dice rolls
@@ -14,8 +16,10 @@ def startgame(ip= '127.0.0.1', port= 5555, type ='j'):
     b = Board()
     conn = GameConnection()
     
-
+    # Create GUI board
+    gui = BoardGUI()
     
+    # No threading needed, just create the GUI
     if type.startswith('h'):
         is_host = True
         conn.host_game(ip, port)
@@ -32,7 +36,11 @@ def startgame(ip= '127.0.0.1', port= 5555, type ='j'):
     current_side = True  # X starts first
     
     while (line not in exitTerms):
+        if not gui.update():  # Update GUI in main thread
+            break
         print(b)
+        # Update GUI board
+        gui.update_board(b)
         print("Current turn: " + ("X" if current_side else "O"))
         
         if current_side == my_side:  # My turn
@@ -45,6 +53,7 @@ def startgame(ip= '127.0.0.1', port= 5555, type ='j'):
             print(f"You rolled a {roll1} and a {roll2}, giving you a total of {total} moves.")
 
             while total > 0:
+                gui.update()  # Add GUI updates during move input
                 print(f"You have {total} steps left.")
                 line = input("Enter your move: ")
                 if line == 'resign':
@@ -83,8 +92,10 @@ def startgame(ip= '127.0.0.1', port= 5555, type ='j'):
                     conn.send_move(space, steps, None)
                     total -= steps
                     print(b)
+                    # Update GUI after each move
+                    gui.update_board(b)
                     
-                    #Check for game end after each move
+                   # Check for game end after each move
                     game_over, winner, message = check_end_game(b)
                     print(message)
                     if game_over:
@@ -98,6 +109,7 @@ def startgame(ip= '127.0.0.1', port= 5555, type ='j'):
                         current_side = not current_side
 
         else:  # Opponent's turn
+            gui.update()  # Add GUI updates while waiting
             print("Waiting for opponent's move...")
             move = conn.receive_move()
             if not move:
@@ -134,6 +146,8 @@ def startgame(ip= '127.0.0.1', port= 5555, type ='j'):
     
         
     conn.close()
+    if gui.is_running:
+        gui.window.destroy()
 
 def make_valid_move(board, side, space, steps, roll1, roll2, total):
     """
