@@ -161,19 +161,21 @@ Commands:
 ## Wireshark Packet Analysis
 
 ### Packets Sent by Users via Chat
-![Chat Packets](screenshots/chat_packets.png)
+![Chat Packets](screenshots/Chats.png)
 Description: This screenshot shows the packets sent by users when they communicate via the P2P chat functionality.
 
 ### Packets Sent by User to Router
-![User to Router Packets](screenshots/user_to_router_packets.png)
+![User to Router Packets](screenshots/ClientToRouter.png)
 Description: This screenshot captures the packets sent by a user to the first router in the onion routing network.
 
 ### Packets Sent Between Routers
-![Router to Router Packets](screenshots/router_to_router_packets.png)
+![Router to Router Packets](screenshots/BetweenRouters.png)
 Description: This screenshot illustrates the packets exchanged between the routers in the onion routing network.
 
 ### Packets Sent Between Users for Game Moves
-![Game Move Packets](screenshots/game_move_packets.png)
+![Game Move Packets](screenshots/BetweenPlayers.png)
 Description: This screenshot displays the packets sent between users to update the game board and perform moves.
+
+In all packets, we have ephemeral to connect TCP and that maybe for TCP rules or system network configurations
 
 This documentation outlines the core functionality and flow of your Backgammon game, focusing on how the P2P gameplay integrates with the centralized server for game management.
